@@ -38,7 +38,7 @@ impl <T: Debug> Debug for Error<T> {
         write!(f, "{:?}", self.error)?;
 
         writeln!(f, "\n\nCaused by:")?;
-        for item in self.context.iter() {
+        for item in self.context.iter().rev() {
             writeln!(f, "- {:?}", item)?;
         }
 
