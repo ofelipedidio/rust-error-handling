@@ -32,6 +32,46 @@ impl <T: Debug> Error<T> {
     }
 }
 
+pub trait ContextMessage : Sized {
+    #[track_caller]
+    fn context<S: Into<String>>(self, text: S) -> Self {
+        let caller_location = std::panic::Location::caller();
+
+        let message = ErrorMessage{
+            message: text.into(),
+            location: caller_location.to_string(),
+        };
+
+        self.attach_context_message(message)
+    }
+
+    fn attach_context_message(self, message: ErrorMessage) -> Self;
+}
+
+impl <R, E: Debug> ContextMessage for std::result::Result<R, Error<E>> {
+    fn attach_context_message(self, message: ErrorMessage) -> Self {
+        match self {
+            Ok(value) => Ok(value),
+            Err(mut err) => {
+                err.context.push(message);
+                Err(err)
+            }
+        }
+    }
+}
+
+impl <R, E : Debug> From<Error<E>> for Result<R, Error<E>> {
+    fn from(value: Error<E>) -> Self {
+        Err(value)
+    }
+}
+
+impl <E : Debug> From<E> for Error<E> {
+    fn from(value: E) -> Self {
+        Error::new(value)
+    }
+}
+
 impl <T: Debug> Debug for Error<T> {
     #[track_caller]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
